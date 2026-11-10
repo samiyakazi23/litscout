@@ -2,7 +2,7 @@
 
 An AI research agent that writes literature reviews where **every citation is a real paper and every cited sentence is checked against its source**.
 
-**Try it:** https://huggingface.co/spaces/samiyakazi23/litscout · type any research question and get a verified review in about 10 minutes.
+**Try it:** https://huggingface.co/spaces/samiyakazi23/litscout · type any research question and get a verified review in about 10 minutes, or paste a GitHub repo and get a checked draft paper.
 **Static demo:** https://samiyakazi23.github.io/litscout/ · example reviews with clickable citations, the evidence behind each one, and the sentences the verifier cut.
 
 AI tools that write literature reviews are known for inventing papers and misquoting real ones. LitScout is built so that it cannot cite anything it has not retrieved, and so that a claim its sources do not support never reaches the reader.
@@ -50,6 +50,33 @@ LitScout finds about 6× more of the experts' references than a single search (1
 
 Tests (`tests/`) include a model that deliberately invents a citation and a claim: both are always removed.
 
+## Paper mode: from your project to a draft paper
+
+Give LitScout a public GitHub repo and it drafts a research paper about the project, then checks it.
+
+```
+repo ─► read README, results files (reports/, results/ …) and module docstrings; never runs the code
+     ─► every number and every code description becomes a numbered fact [F#] tied to its file
+     ─► profile: problem, data, method, contributions; related work from a LitScout review [C#]
+     ─► draft Introduction, Related Work, Data, Methods, Evaluation, Results, Discussion, Conclusion, Abstract
+     ─► check every sentence:
+            a number about the project must appear in the fact it cites   → else flagged, with the fact that has it
+            a number with no citation                                     → flagged
+            a method detail with no evidence                              → flagged; unknown details become [TODO]
+            a claim about other work                                      → judged against the cited abstracts
+            a citation to a fact or paper that does not exist             → removed
+     ─► referee checklist, closest existing work per contribution, Markdown / LaTeX (IEEE) / BibTeX
+```
+
+```bash
+python -m litscout.paper samiyakazi23/floodwatch                      # searches related work itself
+python -m litscout.paper samiyakazi23/floodwatch --review docs/reviews/brahmaputra-floods.json   # reuse a review
+```
+
+On [FloodWatch](https://github.com/samiyakazi23/floodwatch) the draft has 138 sentences: 80 numbers matched to the repo and 2 flagged as not matching their cited fact; 4 claims about published work fully supported and 11 partly (shown highlighted); 25 sentences flagged for the author in total. It used about 26k tokens with a reused review. The LaTeX export compiles to a 10-page draft.
+
+A draft is a starting point for the author, not a finished paper: the flagged sentences and [TODO] markers are the parts only the author can confirm.
+
 ## Run it
 
 ```bash
@@ -92,7 +119,8 @@ litscout/
   llm.py        Groq client with per-task routing, token caps, retries, cache; FakeLLM for tests
   evaluate.py   survey reference-list recall benchmark
   cli.py        command line
-  server.py     public web service (FastAPI): live progress, daily cap, bring-your-own-key, gallery
+  paper.py      Paper mode: repo -> evidence facts -> checked draft paper -> Markdown / LaTeX / BibTeX
+  server.py     public web service (FastAPI): reviews and papers, live progress, daily cap, bring-your-own-key
 docs/           demo site (GitHub Pages)
 tests/          offline tests, including invented-citation and paraphrased-quote checks
 ```

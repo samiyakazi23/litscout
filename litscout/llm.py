@@ -20,7 +20,7 @@ class LLM(Protocol):
     def complete(self, system: str, user: str, task: str, json_mode: bool = False, big: bool = False) -> str: ...
 
 
-MAX_OUT = {"plan": 900, "screen": 700, "screen_alt": 700, "extract": 600, "synthesize": 2600, "verify": 350}
+MAX_OUT = {"plan": 900, "screen": 700, "screen_alt": 700, "extract": 600, "synthesize": 3000, "verify": 350}
 VERIFY_MODEL_ENV = "LITSCOUT_VERIFY_MODEL"
 FALLBACKS = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 _EXHAUSTED: dict = {}  # (key, model) -> time when its quota frees up
@@ -70,14 +70,20 @@ class GroqLLM:
         # other free models instead of stalling the review.
         chain = [model] + [m for m in FALLBACKS if m != model]
         last = None
-        for m in chain:
-            if _EXHAUSTED.get((self.api_key, m), 0) > time.time():
-                continue
-            try:
-                return self._call_one(system, user, json_mode, m)
-            except QuotaSpent as e:
-                _EXHAUSTED[(self.api_key, m)] = time.time() + e.wait
-                last = e
+        for _ in range(4):
+            for m in chain:
+                if _EXHAUSTED.get((self.api_key, m), 0) > time.time():
+                    continue
+                try:
+                    return self._call_one(system, user, json_mode, m)
+                except QuotaSpent as e:
+                    _EXHAUSTED[(self.api_key, m)] = time.time() + e.wait
+                    last = e
+            # every model is resting: wait for the first one to free up if that is soon (per-minute limits)
+            soonest = min(_EXHAUSTED.get((self.api_key, m), 0) for m in chain) - time.time()
+            if soonest > 240:
+                break
+            time.sleep(max(soonest, 5))
         raise RuntimeError(f"Groq rate limit: all free models are busy ({last})")
 
     def _call_one(self, system: str, user: str, json_mode: bool, model: str) -> str:
@@ -94,7 +100,7 @@ class GroqLLM:
             if r.status_code == 429:  # free-tier rate limit
                 wait = float(r.headers.get("retry-after", 2 ** attempt * 3))
                 if "per day" in r.text or "TPD" in r.text or wait > 30 or attempt >= 4:
-                    raise QuotaSpent(model, max(wait, 60))
+                    raise QuotaSpent(model, wait if ('per day' not in r.text and 'TPD' not in r.text) else max(wait, 600))
                 time.sleep(wait)
                 continue
             if r.status_code == 400 and "response_format" in body:

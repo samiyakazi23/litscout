@@ -111,13 +111,26 @@ section.block h2{font:600 34px Literata,serif;letter-spacing:-.01em}
 section.block .lead{color:var(--ink-2);max-width:70ch;margin:10px 0 20px}
 .bench td.num{text-align:right;font-variant-numeric:tabular-nums}
 .bench tr.best td{font-weight:800}
+.fcite{font:700 12px Manrope;color:var(--ok);background:var(--ok-bg);border:0;border-radius:6px;padding:1px 6px;margin:0 1px;cursor:pointer;vertical-align:2px}
+.fcite:hover,.fcite.on{background:var(--ok);color:var(--paper)}
+.flag{background:linear-gradient(transparent 62%,var(--mark) 62%);cursor:help}
+.paperform{display:grid;grid-template-columns:1fr auto;gap:10px}
+@media (max-width:700px){.paperform{grid-template-columns:1fr}}
+.paperform input{font:400 16px Manrope;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:52px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13.5px;color:var(--ink-2);margin:0 0 16px}
+.dl{display:flex;flex-wrap:wrap;gap:8px}
+.dl button{font:700 13.5px Manrope;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px;border-radius:10px;cursor:pointer}
+.dl button:hover{border-color:var(--brand);color:var(--brand)}
+.checklist li{margin:10px 0;color:var(--ink-2)} .checklist b{color:var(--ink)}
+.side ul{padding-left:18px;margin:6px 0}
+.doc .abs{font:400 16.5px/1.7 Literata,serif;background:var(--bg);border-radius:12px;padding:14px 18px}
 footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;color:var(--ink-2);font-size:14px}
 </style>
 </head>
 <body>
 <header class="nav"><div class="wrap">
   <a class="logo" href="#"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M8 10.5l2 2 3.5-3.5"/></svg></i>LitScout</a>
-  <nav><a href="#review">Reviews</a><a href="#benchmark">Benchmark</a><a href="#method">How it works</a><a class="gh" href="https://github.com/samiyakazi23/litscout">GitHub</a></nav>
+  <nav><a href="#review">Reviews</a><a href="#paper">Paper mode</a><a href="#benchmark">Benchmark</a><a href="#method">How it works</a><a class="gh" href="https://github.com/samiyakazi23/litscout">GitHub</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -168,6 +181,30 @@ footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;colo
       </aside>
     </div>
   </div>
+
+  <section class="block" id="paper">
+    <h2>Paper mode: from your project to a draft paper</h2>
+    <p class="lead">Point LitScout at a public GitHub repo. It reads the README and results files (without running your code), turns every number into an evidence fact, finds related published work, and drafts a paper. Each number about your project must match the fact it cites, and each claim about other work is checked against the cited abstracts.</p>
+    <div class="ask" id="paperask" hidden>
+      <form class="paperform" id="paperform">
+        <input id="repo" required placeholder="github.com/you/your-project" aria-label="GitHub repository">
+        <button class="run" id="prun" type="submit">Draft my paper</button>
+      </form>
+      <div class="opts"><label>Your Groq key (optional) <input id="pkey" type="password" autocomplete="off" placeholder="gsk_… used only for this run"></label><span>Takes about 15 minutes. Works best when the README states your results and a reports/ or results/ folder holds metrics files.</span></div>
+      <div class="prog" id="pprog"><div class="steps" id="psteps"></div><div class="logbox" id="plog"></div><div class="err" id="perr"></div></div>
+    </div>
+    <div class="layout">
+      <article class="doc" id="pdoc"><p>Loading the example…</p></article>
+      <aside class="side">
+        <div class="card"><h3>This draft</h3><div class="stat" id="pstats"></div></div>
+        <div class="card" id="ppeek"><h3>Evidence</h3><p class="peek">Click a green <b style="display:inline">F</b> marker to see the line in your repo behind a number, or a purple <b style="display:inline">C</b> marker to see the cited paper.</p></div>
+        <div class="card"><h3>Export</h3><div class="dl"><button data-f="markdown">Markdown</button><button data-f="latex">LaTeX (IEEE)</button><button data-f="bibtex">BibTeX</button></div></div>
+        <div class="card"><details id="pchecklist" open><summary>What a reviewer will ask for</summary><ul class="checklist"></ul></details></div>
+        <div class="card"><details id="pclosest"><summary>Closest existing work per contribution</summary><ul></ul></details></div>
+        <div class="card"><details id="pflags"><summary>Sentences to check yourself</summary><ul></ul></details></div>
+      </aside>
+    </div>
+  </section>
 
   <section class="block" id="benchmark">
     <h2>Does it find what experts cite?</h2>
@@ -255,6 +292,68 @@ if(bench){
     rows.map(([n,k],i)=>`<tr class="${i===2?"best":""}"><td>${n}</td>${["@50","@100","@200"].map(c=>`<td class="num">${Math.round(m[c][k]*100)}%</td>`).join("")}</tr>`).join("")+"</tbody>";
   $("#bench-note").textContent=`Mean over ${bench.n_surveys} surveys: ${bench.surveys.filter(s=>s.survey).map(s=>s.survey).join("; ")}.`;
 }
+
+// ---------------- Paper mode
+let pcur=null;
+const pwith=t=>esc(t).replace(/\[F(\d+)\]/g,(m,n)=>`<button class="fcite" data-f="${n}" aria-label="Evidence F${n}">F${n}</button>`).replace(/\[C(\d+)\]/g,(m,n)=>`<button class="cite pc" data-c="${n}" aria-label="Paper C${n}">C${n}</button>`);
+function pmark(text,section,p){
+  return text.split(/(?<=[.!?])\s+(?=[A-Z(\[])/).map(s=>{const f=p.flagged.find(x=>x.section===section&&x.sentence===s.trim());
+    return f?`<span class="flag" title="${esc(f.reason||f.verdict)}">${pwith(s)}</span>`:pwith(s)}).join(" ");
+}
+function prender(p){
+  pcur=p; const s=p.stats, v=s.verdicts||{};
+  $("#pdoc").innerHTML=`<h2>${esc(p.profile.title)}</h2>
+    <p class="meta">Drafted from <a href="https://github.com/${esc(p.repo)}">${esc(p.repo)}</a> · ${s.facts_cited} of ${s.facts} repo facts and ${s.cards_cited} published papers cited</p>
+    <div class="legend"><span><span class="chip ok">F</span> number checked against your repo</span><span><span class="chip" style="background:var(--brand-50);color:var(--brand)">C</span> claim checked against the cited paper</span><span><span class="flag">highlighted</span> check this yourself</span></div>
+    <h3>Abstract</h3><p class="abs">${pmark(p.abstract,"Abstract",p)}</p>
+    ${p.sections.map(x=>`<h3>${esc(x.heading)}</h3>${x.paragraphs.map(q=>`<p>${pmark(q,x.heading,p)}</p>`).join("")}`).join("")}`;
+  $("#pstats").innerHTML=`<div><b>${v.matches_evidence||0}</b><span>numbers matched to your repo</span></div><div><b>${v.supported||0}</b><span>claims backed by papers</span></div>
+    <div><b>${p.flagged.length}</b><span>sentences to check</span></div><div><b>${p.removed.length}</b><span>sentences cut</span></div>`;
+  $("#pchecklist ul").innerHTML=(p.review.missing||[]).map(m=>`<li><b>${esc(m.item)}</b><br>${esc(m.why)}${m.how?` <i>How: ${esc(m.how)}</i>`:""}</li>`).join("")||"<li>No suggestions.</li>";
+  $("#pclosest ul").innerHTML=(p.closest||[]).map(c=>`<li><b style="color:var(--ink)">${esc(c.contribution)}</b><br>${c.closest.map(k=>`C${k.n}: ${esc(k.title)} (${k.year||""})`).join("<br>")}</li>`).join("");
+  $("#pflags ul").innerHTML=p.flagged.length?p.flagged.map(f=>`<li><span class="chip" style="background:var(--mark);color:var(--ink)">${esc(f.verdict.replace("_"," "))}</span> ${esc(f.sentence)} <i>${esc(f.reason||"")}</i></li>`).join(""):"<li>None.</li>";
+  document.querySelectorAll(".fcite").forEach(b=>b.onclick=()=>ppeekF(+b.dataset.f));
+  document.querySelectorAll(".pc").forEach(b=>b.onclick=()=>ppeekC(+b.dataset.c));
+}
+function ppeekF(n){
+  const f=pcur.facts.find(x=>x.id===n); if(!f)return;
+  document.querySelectorAll(".fcite,.pc").forEach(b=>b.classList.toggle("on",+b.dataset.f===n));
+  $("#ppeek").innerHTML=`<h3>Evidence F${n}</h3><div class="peek"><b><a href="https://github.com/${esc(pcur.repo)}/blob/HEAD/${esc(f.source)}">${esc(f.source)}</a></b><q>${esc(f.text)}</q></div>`;
+}
+function ppeekC(n){
+  const c=pcur.cards.find(x=>x.n===n); if(!c)return;
+  document.querySelectorAll(".fcite,.pc").forEach(b=>b.classList.toggle("on",+b.dataset.c===n));
+  $("#ppeek").innerHTML=`<h3>Paper C${n}</h3><div class="peek"><b><a href="${esc(c.url)}">${esc(c.title)}</a></b>${esc(c.venue||c.source)}, ${c.year||""}
+    <p style="margin:8px 0 0"><span class="chip ok">real paper</span> ${c.doi?`DOI ${esc(c.doi)}`:esc(c.pid)}</p>${c.facts?.key_result?`<q>${esc(c.facts.key_result)}</q>`:""}</div>`;
+}
+document.querySelectorAll(".dl button").forEach(b=>b.onclick=()=>{
+  if(!pcur)return; const f=b.dataset.f, ext={markdown:"md",latex:"tex",bibtex:"bib"}[f];
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([pcur[f]||""],{type:"text/plain"}));
+  a.download=(f==="bibtex"?"refs":"paper")+"."+ext; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+const PSTEPS=[["reading","Read repo"],["profile","Understand"],["related work","Related work"],["writing intro","Write"],["checking results","Check"],["writing the abstract","Abstract"],["reviewing","Referee"],["Done","Done"]];
+if(api)$("#paperask").hidden=false;
+$("#paperform")?.addEventListener("submit",async e=>{
+  e.preventDefault(); $("#perr").textContent=""; $("#prun").disabled=true; $("#pprog").classList.add("on");
+  const body={repo:$("#repo").value.trim().replace(/^(https?:\/\/)?(www\.)?github\.com\//,"https://github.com/").replace(/^(?!https)/,"")}; const k=$("#pkey").value.trim(); if(k)body.groq_key=k;
+  const r=await fetch("api/paper",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!r.ok){$("#perr").textContent=d.detail?.[0]?.msg?"Enter a GitHub repo like github.com/you/project":d.detail||"Could not start.";$("#prun").disabled=false;return}
+  ppoll(d.job);
+});
+async function ppoll(id){
+  const j=await fetch("api/job/"+id).then(r=>r.json());
+  const msgs=j.progress.map(p=>p.msg.toLowerCase());
+  const reached=PSTEPS.map(([k])=>msgs.some(m=>m.startsWith(k.toLowerCase())));
+  const last=reached.lastIndexOf(true);
+  $("#psteps").innerHTML=PSTEPS.map(([,n],i)=>`<span class="${i<last||j.status==="done"?"done":i===last?"now":""}">${n}</span>`).join("");
+  $("#plog").innerHTML=j.progress.slice(-8).map(p=>`${p.t}s · ${esc(p.msg)}`).join("<br>");
+  if(j.status==="running")return setTimeout(()=>ppoll(id),2500);
+  $("#prun").disabled=false;
+  if(j.status==="error"){$("#perr").textContent=j.error;return}
+  prender(j.paper); document.getElementById("pdoc").scrollIntoView({behavior:"smooth"});
+}
+fetch("papers/floodwatch.json").then(r=>r.ok?r.json():null).then(p=>p&&prender(p)).catch(()=>{});
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>location.reload());
 })();
 </script>

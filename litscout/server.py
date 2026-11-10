@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 from .agent import LitScout
 from .llm import GroqLLM
+from .paper import PaperWriter, to_latex, to_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
@@ -45,15 +46,23 @@ class ReviewRequest(BaseModel):
     until_year: int | None = Field(default=None, ge=1950, le=2100)
 
 
+class PaperRequest(BaseModel):
+    repo: str = Field(min_length=3, max_length=200, pattern=r"^(https://github\.com/)?[\w.-]+/[\w.-]+/?$")
+    groq_key: str | None = Field(default=None, max_length=200)
+
+
+PAPER_COST = 2  # a paper runs a literature review plus drafting: counts as two free runs
+
+
 def slug(q: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", q.lower()).strip("-")[:60] + "-" + uuid.uuid4().hex[:6]
 
 
-def _host_quota_ok() -> bool:
+def _host_quota_ok(cost: int = 1) -> bool:
     today = date.today().isoformat()
     if usage["day"] != today:
         usage.update(day=today, count=0)
-    return usage["count"] < DAILY_CAP
+    return usage["count"] + cost <= DAILY_CAP
 
 
 def _run(job_id: str, req: ReviewRequest, key: str) -> None:
@@ -86,27 +95,58 @@ def _run(job_id: str, req: ReviewRequest, key: str) -> None:
         job.pop("_key", None)
 
 
-@app.post("/api/review")
-def start_review(req: ReviewRequest):
+def _start(kind: str, label: str, groq_key: str | None, cost: int, target, req) -> dict:
     with lock:
         active = sum(1 for j in jobs.values() if j["status"] == "running")
         if active >= MAX_ACTIVE:
-            raise HTTPException(429, "Another review is running right now. Please try again in a few minutes.")
-        own = (req.groq_key or "").strip()
+            raise HTTPException(429, "Another run is in progress right now. Please try again in a few minutes.")
+        own = (groq_key or "").strip()
         if not own:
-            if not _host_quota_ok():
-                raise HTTPException(429, f"Today's {DAILY_CAP} free reviews are used up. Add your own free Groq key to run one now, or come back tomorrow.")
+            if not _host_quota_ok(cost):
+                raise HTTPException(429, f"Today's free runs are used up. Add your own free Groq key to run one now, or come back tomorrow.")
             key = os.getenv("GROQ_API_KEY", "")
             if not key:
                 raise HTTPException(503, "This server has no language-model key configured.")
-            usage["count"] += 1
+            usage["count"] += cost
         else:
             key = own
         job_id = uuid.uuid4().hex
-        jobs[job_id] = {"status": "running", "question": req.question, "slug": slug(req.question),
-                        "started": time.time(), "progress": [], "review": None, "error": None}
-    threading.Thread(target=_run, args=(job_id, req, key), daemon=True).start()
+        jobs[job_id] = {"status": "running", "kind": kind, "question": label, "slug": slug(label),
+                        "started": time.time(), "progress": [], "review": None, "paper": None, "error": None}
+    threading.Thread(target=target, args=(job_id, req, key), daemon=True).start()
     return {"job": job_id}
+
+
+@app.post("/api/review")
+def start_review(req: ReviewRequest):
+    return _start("review", req.question, req.groq_key, 1, _run, req)
+
+
+def _run_paper(job_id: str, req: PaperRequest, key: str) -> None:
+    job = jobs[job_id]
+
+    def log(msg: str) -> None:
+        job["progress"].append({"t": round(time.time() - job["started"]), "msg": msg})
+
+    try:
+        llm = GroqLLM(api_key=key)
+        data = PaperWriter(llm, log=log).run(req.repo).to_dict()
+        data["slug"], data["created"] = job["slug"], time.strftime("%Y-%m-%d")
+        data["markdown"] = to_markdown(data)
+        data["latex"], data["bibtex"] = to_latex(data)
+        job.update(status="done", paper=data)  # papers are private to the requester: not added to the gallery
+    except Exception as e:
+        msg = str(e)
+        if "429" in msg or "rate limit" in msg.lower():
+            msg = "The language model's free rate limit was reached. Try again later, or use your own free Groq key."
+        elif "401" in msg:
+            msg = "The Groq key was rejected. Check it and try again."
+        job.update(status="error", error=msg[:300])
+
+
+@app.post("/api/paper")
+def start_paper(req: PaperRequest):
+    return _start("paper", req.repo.strip().rstrip("/"), req.groq_key, PAPER_COST, _run_paper, req)
 
 
 @app.get("/api/job/{job_id}")
