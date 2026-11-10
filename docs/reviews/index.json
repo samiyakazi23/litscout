@@ -1,0 +1,10 @@
+[
+ {
+  "file": "brahmaputra-floods.json",
+  "short": "ML for flood forecasting in the Brahmaputra basin"
+ },
+ {
+  "file": "flood-ml-arxiv.json",
+  "short": "ML flood forecasting in large basins (arXiv only)"
+ }
+]

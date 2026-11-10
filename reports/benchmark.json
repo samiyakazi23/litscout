@@ -1,0 +1,299 @@
+{
+  "n_surveys": 7,
+  "mean_recall": {
+    "@50": {
+      "baseline": 0.018,
+      "multi_query": 0.035,
+      "with_snowball": 0.063
+    },
+    "@100": {
+      "baseline": 0.023,
+      "multi_query": 0.046,
+      "with_snowball": 0.095
+    },
+    "@200": {
+      "baseline": 0.023,
+      "multi_query": 0.056,
+      "with_snowball": 0.146
+    }
+  },
+  "surveys": [
+    {
+      "survey": "Evaluation of Machine Learning approach in flood prediction scenarios and its input parameters: A systematic review",
+      "year": 2020,
+      "topic": "Evaluation of Machine Learning approach in flood prediction scenarios and its input parameters",
+      "gold_refs": 66,
+      "queries": [
+        "deep learning flood prediction",
+        "support vector machine flood forecasting",
+        "random forest flood modeling",
+        "rainfall runoff features machine learning",
+        "soil moisture antecedent flood prediction",
+        "river discharge antecedent variables",
+        "NSE RMSE flood prediction ML",
+        "cross‑validation hydrological forecasting",
+        "skill scores flood model assessment",
+        "ML versus hydraulic model flood forecasting",
+        "benchmarking neural networks against HEC‑RAS",
+        "statistical vs machine learning flood prediction",
+        "flood prediction case study India ML",
+        "European basin machine learning flood",
+        "urban flood forecasting deep learning"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.015,
+          "multi_query": 0.03,
+          "with_snowball": 0.061
+        },
+        "@100": {
+          "baseline": 0.015,
+          "multi_query": 0.03,
+          "with_snowball": 0.061
+        },
+        "@200": {
+          "baseline": 0.015,
+          "multi_query": 0.045,
+          "with_snowball": 0.061
+        }
+      }
+    },
+    {
+      "survey": "FUSING OF OPTICAL AND SYNTHETIC APERTURE RADAR (SAR) REMOTE SENSING DATA: A SYSTEMATIC LITERATURE REVIEW (SLR)",
+      "year": 2019,
+      "topic": "FUSING OF OPTICAL AND SYNTHETIC APERTURE RADAR (SAR) REMOTE SENSING DATA: A SYSTEMATIC LITERATURE (SLR)",
+      "gold_refs": 64,
+      "queries": [
+        "optical SAR data fusion methods",
+        "multisensor image fusion algorithms",
+        "pixel-level SAR optical fusion",
+        "SAR imaging principles",
+        "polarimetric SAR processing",
+        "interferometric SAR techniques",
+        "multispectral optical imagery",
+        "high‑resolution satellite optical data",
+        "hyperspectral remote sensing",
+        "land‑cover classification SAR optical",
+        "disaster monitoring fused SAR optical",
+        "urban mapping multimodal remote sensing",
+        "fusion performance metrics",
+        "accuracy assessment SAR optical fusion",
+        "benchmark datasets remote sensing fusion"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.0,
+          "multi_query": 0.094,
+          "with_snowball": 0.125
+        },
+        "@100": {
+          "baseline": 0.0,
+          "multi_query": 0.094,
+          "with_snowball": 0.141
+        },
+        "@200": {
+          "baseline": 0.0,
+          "multi_query": 0.094,
+          "with_snowball": 0.156
+        }
+      }
+    },
+    {
+      "survey": "A survey on multimodal large language models",
+      "year": 2024,
+      "topic": "multimodal large language models",
+      "gold_refs": 217,
+      "queries": [
+        "multimodal transformer architecture",
+        "cross-modal attention networks",
+        "fusion strategies for multimodal LLMs",
+        "multimodal pretraining objectives",
+        "contrastive multimodal learning",
+        "instruction tuning multimodal models",
+        "multimodal reasoning benchmark",
+        "vision-language understanding tasks",
+        "audio-visual QA datasets",
+        "multimodal chatbots",
+        "image captioning with LLMs",
+        "video summarization language models",
+        "bias in multimodal LLMs",
+        "privacy concerns multimodal data",
+        "hallucination mitigation multimodal"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.018,
+          "multi_query": 0.014,
+          "with_snowball": 0.037
+        },
+        "@100": {
+          "baseline": 0.018,
+          "multi_query": 0.023,
+          "with_snowball": 0.115
+        },
+        "@200": {
+          "baseline": 0.018,
+          "multi_query": 0.028,
+          "with_snowball": 0.212
+        }
+      }
+    },
+    {
+      "survey": "Financial time series forecasting with deep learning : A systematic literature review: 2005–2019",
+      "year": 2020,
+      "topic": "Financial time series forecasting with deep learning : A systematic literature 2005–2019",
+      "gold_refs": 212,
+      "queries": [
+        "LSTM stock price prediction",
+        "CNN financial time series",
+        "Transformer market forecasting",
+        "CNN‑LSTM hybrid finance",
+        "ensemble deep learning stock",
+        "ARIMA deep learning hybrid",
+        "technical indicators deep learning",
+        "wavelet transform financial series",
+        "sentiment news deep neural network",
+        "RMSE financial forecasting deep learning",
+        "directional accuracy stock prediction",
+        "benchmark datasets financial time series",
+        "dropout overfitting financial models",
+        "transfer learning market prediction",
+        "hyperparameter optimization deep finance"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.0,
+          "multi_query": 0.019,
+          "with_snowball": 0.047
+        },
+        "@100": {
+          "baseline": 0.0,
+          "multi_query": 0.028,
+          "with_snowball": 0.075
+        },
+        "@200": {
+          "baseline": 0.0,
+          "multi_query": 0.028,
+          "with_snowball": 0.151
+        }
+      }
+    },
+    {
+      "survey": "Crop yield prediction using machine learning: A systematic literature review",
+      "year": 2020,
+      "topic": "Crop yield prediction using machine learning: A systematic literature",
+      "gold_refs": 101,
+      "queries": [
+        "random forest crop yield",
+        "support vector regression agriculture",
+        "deep learning yield estimation",
+        "satellite imagery yield prediction",
+        "drone multispectral crop forecasting",
+        "soil moisture sensors yield model",
+        "weather indices yield modeling",
+        "crop phenology variables machine learning",
+        "soil fertility features yield prediction",
+        "cross‑validation yield forecasting",
+        "error metrics agricultural ML",
+        "ensemble model comparison crop yield",
+        "precision agriculture yield optimization",
+        "farm management decision support ML",
+        "regional yield forecasting policy"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.01,
+          "multi_query": 0.03,
+          "with_snowball": 0.079
+        },
+        "@100": {
+          "baseline": 0.01,
+          "multi_query": 0.05,
+          "with_snowball": 0.119
+        },
+        "@200": {
+          "baseline": 0.01,
+          "multi_query": 0.059,
+          "with_snowball": 0.119
+        }
+      }
+    },
+    {
+      "survey": "Application of Artificial Intelligence and Remote Sensing for Landslide Detection and Prediction: Systematic Review",
+      "year": 2024,
+      "topic": "Application of Artificial Intelligence and Remote Sensing for Landslide Detection and Prediction",
+      "gold_refs": 186,
+      "queries": [
+        "deep learning landslide detection",
+        "convolutional neural network landslide mapping",
+        "machine learning slope instability",
+        "LiDAR landslide identification",
+        "SAR interferometry landslide monitoring",
+        "multispectral imagery landslide susceptibility",
+        "AI‑based landslide prediction GIS",
+        "ensemble learning landslide forecasting",
+        "spatiotemporal deep learning landslide risk",
+        "ground truth validation landslide AI",
+        "uncertainty analysis remote sensing landslides",
+        "real‑time landslide early warning system"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.043,
+          "multi_query": 0.011,
+          "with_snowball": 0.011
+        },
+        "@100": {
+          "baseline": 0.075,
+          "multi_query": 0.048,
+          "with_snowball": 0.032
+        },
+        "@200": {
+          "baseline": 0.075,
+          "multi_query": 0.091,
+          "with_snowball": 0.075
+        }
+      }
+    },
+    {
+      "survey": "A Comprehensive Survey on Graph Neural Networks",
+      "year": 2020,
+      "topic": "Graph Neural Networks",
+      "gold_refs": 185,
+      "queries": [
+        "graph convolutional network",
+        "graph attention network",
+        "graph isomorphism network",
+        "graph neural network training",
+        "graph contrastive learning",
+        "graph self‑supervised learning",
+        "large‑scale graph neural network",
+        "sampling methods for GNNs",
+        "distributed graph neural network",
+        "graph neural network recommendation",
+        "GNN drug discovery",
+        "graph neural network social network",
+        "expressivity of graph neural networks",
+        "graph neural network over‑smoothing",
+        "graph neural network generalization"
+      ],
+      "recall": {
+        "@50": {
+          "baseline": 0.038,
+          "multi_query": 0.049,
+          "with_snowball": 0.081
+        },
+        "@100": {
+          "baseline": 0.043,
+          "multi_query": 0.049,
+          "with_snowball": 0.119
+        },
+        "@200": {
+          "baseline": 0.043,
+          "multi_query": 0.049,
+          "with_snowball": 0.249
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+[
+ {
+  "id": "W3042554268",
+  "title": "Evaluation of Machine Learning approach in flood prediction scenarios and its input parameters: A systematic review",
+  "year": 2020,
+  "refs": 66,
+  "note": "machine learning flood forecasting review"
+ },
+ {
+  "id": "W2917419781",
+  "title": "FUSING OF OPTICAL AND SYNTHETIC APERTURE RADAR (SAR) REMOTE SENSING DATA: A SYSTEMATIC LITERATURE REVIEW (SLR)",
+  "year": 2019,
+  "refs": 64,
+  "note": "deep learning flood mapping synthetic aperture radar review"
+ },
+ {
+  "id": "W4404356490",
+  "title": "A survey on multimodal large language models",
+  "year": 2024,
+  "refs": 217,
+  "note": "large language model based autonomous agents survey"
+ },
+ {
+  "id": "W2990718568",
+  "title": "Financial time series forecasting with deep learning : A systematic literature review: 2005\u20132019",
+  "year": 2020,
+  "refs": 212,
+  "note": "deep learning time series forecasting survey"
+ },
+ {
+  "id": "W3079760979",
+  "title": "Crop yield prediction using machine learning: A systematic literature review",
+  "year": 2020,
+  "refs": 101,
+  "note": "machine learning crop yield prediction systematic review"
+ },
+ {
+  "id": "W4401515454",
+  "title": "Application of Artificial Intelligence and Remote Sensing for Landslide Detection and Prediction: Systematic Review",
+  "year": 2024,
+  "refs": 186,
+  "note": "remote sensing landslide detection deep learning review"
+ },
+ {
+  "id": "W2907492528",
+  "title": "A Comprehensive Survey on Graph Neural Networks",
+  "year": 2020,
+  "refs": 185,
+  "note": "graph neural networks traffic forecasting survey"
+ }
+]

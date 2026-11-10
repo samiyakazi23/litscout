@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LitScout</title>
+<meta name="description" content="An AI research agent that writes literature reviews where every citation is a real paper and every claim is checked against its source.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f6fb; --paper:#ffffff; --ink:#1b1a33; --ink-2:#5b5a78; --line:#e2e1ef;
+  --brand:#4338ca; --brand-2:#6d5ef5; --brand-50:#eceafe; --ok:#0f7a45; --ok-bg:#e4f5ec; --cut:#a1331f; --cut-bg:#fbebe7; --mark:#fff3c4;
+  --shadow:0 1px 2px rgba(27,26,51,.05),0 10px 30px rgba(27,26,51,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12111f; --paper:#1a1930; --ink:#e8e7f6; --ink-2:#a9a7c6; --line:#2e2c4c; --brand:#a5a0ff; --brand-2:#8b80ff; --brand-50:#25234a;
+  --ok:#62d49a; --ok-bg:#163527; --cut:#ff9b85; --cut-bg:#3d1d17; --mark:#4a3f12; --shadow:none;
+}}
+:root[data-theme="dark"]{
+  --bg:#12111f; --paper:#1a1930; --ink:#e8e7f6; --ink-2:#a9a7c6; --line:#2e2c4c; --brand:#a5a0ff; --brand-2:#8b80ff; --brand-50:#25234a;
+  --ok:#62d49a; --ok-bg:#163527; --cut:#ff9b85; --cut-bg:#3d1d17; --mark:#4a3f12; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Manrope,system-ui,sans-serif}
+a{color:var(--brand);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--brand-2);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:24px}
+@media (max-width:600px){.wrap{padding-inline:16px}}
+h1,h2,h3{margin:0;line-height:1.15}
+.nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:18px;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink);text-decoration:none}
+.logo i{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand-2))}
+.nav nav{display:flex;gap:4px;margin-left:auto}
+.nav nav a{color:var(--ink-2);font-weight:600;font-size:15px;text-decoration:none;padding:7px 12px;border-radius:8px}
+.nav nav a:hover{color:var(--ink);background:var(--brand-50)}
+@media (max-width:640px){.nav nav a:not(.gh){display:none}}
+
+.hero{padding:56px 0 28px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:40px;align-items:end}
+@media (max-width:900px){.hero{grid-template-columns:1fr}}
+.hero h1{font:600 clamp(36px,5vw,58px)/1.08 Literata,serif;letter-spacing:-.02em}
+.hero p{font-size:18px;color:var(--ink-2);max-width:56ch;margin:16px 0 0}
+.how{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+.how ol{margin:0;padding:0;list-style:none;counter-reset:s}
+.how li{counter-increment:s;display:grid;grid-template-columns:26px 1fr;gap:10px;padding:6px 0;font-size:14.5px;color:var(--ink-2)}
+.how li::before{content:counter(s);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--brand-50);color:var(--brand);font-weight:800;font-size:12px}
+.how li b{color:var(--ink)}
+
+.picker{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 18px}
+.picker button{font:600 14px Manrope;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:7px 14px;border-radius:999px;cursor:pointer;text-align:left}
+.picker button[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-50);color:var(--brand)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:1fr}}
+.doc{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:36px 44px;box-shadow:var(--shadow);min-width:0}
+@media (max-width:600px){.doc{padding:22px 18px}}
+.doc h2{font:600 30px/1.2 Literata,serif;letter-spacing:-.01em}
+.doc .meta{color:var(--ink-2);font-size:14px;margin:8px 0 22px}
+.doc h3{font:600 21px Literata,serif;margin:28px 0 10px}
+.doc p{font:400 17.5px/1.75 Literata,serif;margin:0 0 12px;max-width:72ch}
+.cite{font:700 12px Manrope;color:var(--brand);background:var(--brand-50);border:0;border-radius:6px;padding:1px 6px;margin:0 1px;cursor:pointer;vertical-align:2px}
+.cite:hover,.cite.on{background:var(--brand);color:#fff}
+.gaps li{font:400 17px/1.7 Literata,serif;margin:6px 0}
+.tablewrap{overflow-x:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;color:var(--ink-2);font-weight:600}
+td.n{color:var(--ink-2);font-weight:700}
+tr.hl td{background:var(--mark)}
+.refs{list-style:none;padding:0;margin:0}
+.refs li{font-size:14.5px;padding:8px 10px;border-radius:8px;display:grid;grid-template-columns:34px 1fr;gap:6px}
+.refs li.hl{background:var(--mark)}
+.refs li span{font-weight:800;color:var(--brand)}
+.side{display:grid;gap:16px;position:sticky;top:78px}
+@media (max-width:980px){.side{position:static}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.card h3{font-size:16px;font-weight:800;margin-bottom:10px}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat div{background:var(--bg);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:24px;font-weight:800}
+.stat span{font-size:12.5px;color:var(--ink-2)}
+.chip{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+.ok{background:var(--ok-bg);color:var(--ok)} .cutc{background:var(--cut-bg);color:var(--cut)}
+.peek{font-size:14px;color:var(--ink-2)}
+.peek b{color:var(--ink);display:block;font-size:15px;margin-bottom:4px}
+.peek q{display:block;font-style:italic;margin-top:8px;border-left:3px solid var(--brand-2);padding-left:10px;quotes:none}
+details{font-size:14px}
+details summary{cursor:pointer;font-weight:700;color:var(--ink)}
+details li{margin:8px 0;color:var(--ink-2)}
+section.block{padding:56px 0 0}
+section.block h2{font:600 34px Literata,serif;letter-spacing:-.01em}
+section.block .lead{color:var(--ink-2);max-width:70ch;margin:10px 0 20px}
+.bench td.num{text-align:right;font-variant-numeric:tabular-nums}
+.bench tr.best td{font-weight:800}
+footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;color:var(--ink-2);font-size:14px}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="logo" href="#"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M8 10.5l2 2 3.5-3.5"/></svg></i>LitScout</a>
+  <nav><a href="#review">Example reviews</a><a href="#benchmark">Benchmark</a><a href="#method">How it works</a><a class="gh" href="https://github.com/samiyakazi23/litscout">GitHub</a></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <h1>Literature reviews where every citation is checked.</h1>
+      <p>LitScout is an AI research agent. Give it a question and it plans searches, reads hundreds of papers, follows their citations, and writes a structured review. Every citation is a real paper, and every cited sentence is checked against that paper's abstract before you see it.</p>
+    </div>
+    <div class="how" id="method">
+      <ol>
+        <li><span><b>Plan</b> sub-topics and search queries</span></li>
+        <li><span><b>Search</b> OpenAlex and arXiv, then <b>snowball</b> through references and citing papers</span></li>
+        <li><span><b>Screen</b> every candidate for relevance</span></li>
+        <li><span><b>Extract</b> task, method, data and result, with a verbatim quote</span></li>
+        <li><span><b>Write</b> only from numbered evidence cards</span></li>
+        <li><span><b>Verify</b> each sentence against the cited abstracts; cut what fails</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="review">
+    <div class="picker" role="group" aria-label="Example reviews" id="picker"></div>
+    <div class="layout">
+      <article class="doc" id="doc"><p>Loading…</p></article>
+      <aside class="side">
+        <div class="card"><h3>This review</h3><div class="stat" id="stats"></div></div>
+        <div class="card" id="peek"><h3>Citation</h3><p class="peek">Click a citation number to see the paper and the evidence behind it.</p></div>
+        <div class="card"><details id="removed"><summary>Sentences the verifier cut</summary><ul></ul></details></div>
+      </aside>
+    </div>
+  </div>
+
+  <section class="block" id="benchmark">
+    <h2>Does it find what experts cite?</h2>
+    <p class="lead" id="bench-lead">Each published survey paper's reference list is a list of papers experts judged important. LitScout gets only the survey's topic and the year it was written, and we measure what share of that reference list it finds, against a single keyword search ranked the same way.</p>
+    <div class="card"><div class="tablewrap"><table class="bench" id="bench"><tbody><tr><td>Benchmark results are being computed.</td></tr></tbody></table></div><p class="peek" id="bench-note" style="margin:10px 0 0"></p></div>
+  </section>
+</main>
+
+<footer><div class="wrap">Built by <a href="https://github.com/samiyakazi23">Samiya Kazi</a>. Papers from <a href="https://openalex.org">OpenAlex</a> and <a href="https://arxiv.org">arXiv</a>; language models served by Groq. Reviews are research aids: read the cited papers before relying on them.</div></footer>
+
+<script>
+(async function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const index=await fetch("reviews/index.json").then(r=>r.json()).catch(()=>[]);
+let cur=null;
+$("#picker").innerHTML=index.map((r,i)=>`<button data-i="${i}" aria-pressed="${i===0}">${esc(r.short||r.question)}</button>`).join("");
+document.querySelectorAll("#picker button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#picker button").forEach(x=>x.setAttribute("aria-pressed",x===b));load(index[+b.dataset.i].file)});
+const withCites=t=>esc(t).replace(/\[(\d+)\]/g,(m,n)=>`<button class="cite" data-n="${n}" aria-label="Citation ${n}">${n}</button>`);
+async function load(file){
+  const r=await fetch("reviews/"+file).then(x=>x.json()); cur=r;
+  const s=r.stats;
+  $("#doc").innerHTML=`<h2>${esc(r.question)}</h2>
+    <p class="meta">${s.cards} papers reviewed from ${s.papers_found} found · ${Math.round(s.supported_share*100)}% of cited sentences fully supported, the rest partly · ${s.invalid_citations_removed} invented citations</p>
+    ${r.sections.map(x=>`<h3>${esc(x.heading)}</h3><p>${withCites(x.text)}</p>`).join("")}
+    ${r.gaps.length?`<h3>Research gaps</h3><ul class="gaps">${r.gaps.map(g=>`<li>${withCites(g.text)}</li>`).join("")}</ul>`:""}
+    <h3>Comparison</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Paper</th><th>Method</th><th>Data / region</th><th>Key result</th></tr></thead><tbody>
+    ${r.cards.map(c=>`<tr id="row-${c.n}"><td class="n">${c.n}</td><td><a href="${esc(c.url)}">${esc(c.title)}</a> (${c.year||""})</td><td>${esc(c.facts.method)}</td><td>${esc([c.facts.data,c.facts.region].filter(Boolean).join("; "))}</td><td>${esc(c.facts.key_result)}</td></tr>`).join("")}</tbody></table></div>
+    <h3>References</h3><ol class="refs">${r.cards.map(c=>`<li id="ref-${c.n}"><span>[${c.n}]</span><div>${esc(c.authors.slice(0,3).join(", "))}${c.authors.length>3?" et al.":""} (${c.year||"n.d."}). <a href="${esc(c.url)}">${esc(c.title)}</a>. <i>${esc(c.venue||c.source)}</i>.</div></li>`).join("")}</ol>`;
+  const v=s.verdicts||{};
+  $("#stats").innerHTML=`<div><b>${s.papers_found}</b><span>papers found</span></div><div><b>${s.cards}</b><span>kept after screening</span></div>
+    <div><b>${v.supported||0}</b><span>sentences fully supported</span></div><div><b>${r.removed.length}</b><span>sentences cut</span></div>`;
+  $("#removed ul").innerHTML=r.removed.length?r.removed.map(x=>`<li><span class="chip cutc">${esc(x.verdict)}</span> ${esc(x.sentence)}</li>`).join(""):"<li>None: every sentence passed.</li>";
+  document.querySelectorAll(".cite").forEach(b=>b.onclick=()=>peek(+b.dataset.n));
+}
+function peek(n){
+  const c=cur.cards.find(c=>c.n===n); if(!c)return;
+  document.querySelectorAll(".cite").forEach(b=>b.classList.toggle("on",+b.dataset.n===n));
+  document.querySelectorAll("tr.hl,li.hl").forEach(e=>e.classList.remove("hl"));
+  $("#row-"+n)?.classList.add("hl"); $("#ref-"+n)?.classList.add("hl");
+  $("#peek").innerHTML=`<h3>Citation [${n}]</h3><div class="peek"><b><a href="${esc(c.url)}">${esc(c.title)}</a></b>${esc(c.venue||c.source)}, ${c.year||""} · ${c.citations} citations
+    <p style="margin:8px 0 0"><span class="chip ok">real paper</span> ${c.doi?`DOI ${esc(c.doi)}`:esc(c.pid)}</p>
+    ${c.facts.evidence_quote?`<q>${esc(c.facts.evidence_quote)}</q>`:""}</div>`;
+}
+if(index.length)load(index[0].file);
+const bench=await fetch("benchmark.json").then(r=>r.ok?r.json():null).catch(()=>null);
+if(bench){
+  const m=bench.mean_recall, rows=[["One keyword search","baseline"],["LitScout planned queries","multi_query"],["LitScout + citation snowballing","with_snowball"]];
+  $("#bench").innerHTML=`<thead><tr><th>Method</th><th class="num">Recall in top 50</th><th class="num">top 100</th><th class="num">top 200</th></tr></thead><tbody>`+
+    rows.map(([n,k],i)=>`<tr class="${i===2?"best":""}"><td>${n}</td>${["@50","@100","@200"].map(c=>`<td class="num">${Math.round(m[c][k]*100)}%</td>`).join("")}</tr>`).join("")+"</tbody>";
+  $("#bench-note").textContent=`Mean over ${bench.n_surveys} surveys: ${bench.surveys.filter(s=>s.survey).map(s=>s.survey).join("; ")}.`;
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>location.reload());
+})();
+</script>
+</body>
+</html>
