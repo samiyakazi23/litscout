@@ -6,6 +6,8 @@ against the cited papers' abstracts before it reaches the reader.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 import json
 import math
 import re
@@ -34,7 +36,7 @@ SCREEN_SYS = """You screen papers for a literature review. Score each numbered p
 1 = shares only a general technique or broad domain.
 0 = off topic.
 Do not penalise a paper just because it studies a different region if the method and task match.
-Return JSON {"scores":[{"i":int,"score":int,"reason":str}]} covering every paper. Judge only from the text given."""
+Return JSON {"scores":[{"i":int,"score":int}]} covering every paper, no explanations. Judge only from the text given."""
 
 EXTRACT_SYS = """Extract facts about ONE paper from its title and abstract only. Return JSON:
 {"task":str,"method":str,"data":str,"region":str,"key_result":str,"evidence_quote":str}
@@ -113,14 +115,23 @@ class LitScout:
 
     # ---- 2. search
     def gather(self, plan: dict, question: str) -> list[S.Paper]:
-        found = []
-        queries = [question] + [q for s in plan["subtopics"] for q in s["queries"]]
-        for q in dict.fromkeys(queries):
-            for name, fn in self.search.items():
+        queries = list(dict.fromkeys([question] + [q for s in plan["subtopics"] for q in s["queries"]]))
+
+        def one_source(name: str, fn: Callable) -> list[S.Paper]:
+            got, fails = [], 0
+            for q in queries:
+                if fails >= 3:  # source is rate-limiting us: stop asking it for this run
+                    break
                 try:
-                    found += fn(q)
+                    got += fn(q)
                 except Exception as e:  # one source failing should not stop the review
+                    fails += 1
                     self.log(f"  {name} failed for '{q}': {e.__class__.__name__}")
+            return got
+
+        # sources have separate rate limits, so query them in parallel
+        with ThreadPoolExecutor(max_workers=len(self.search)) as ex:
+            found = [p for part in ex.map(lambda kv: one_source(*kv), self.search.items()) for p in part]
         papers = [p for p in S.merge(found) if p.title and self._year_ok(p)]
         self.log(f"search: {len(queries)} queries -> {len(papers)} unique papers")
         return papers
@@ -146,9 +157,12 @@ class LitScout:
         scored = []
         for i in range(0, len(papers), 10):
             batch = papers[i:i + 10]
-            listing = "\n".join(f"[{k}] {p.title} ({p.year})\n{p.abstract[:700]}" for k, p in enumerate(batch))
+            listing = "\n".join(f"[{k}] {p.title} ({p.year})\n{p.abstract[:450]}" for k, p in enumerate(batch))
+            self.log(f"screening papers {i + 1}-{i + len(batch)} of {len(papers)}")
             try:
-                res = parse_json(self.llm.complete(SCREEN_SYS, f"QUESTION: {question}\nRELEVANT IF: {inclusion}\n\n{listing}", task="screen", json_mode=True))
+                # alternate two models so batches draw on separate per-minute token quotas
+                task = "screen" if (i // 10) % 2 == 0 else "screen_alt"
+                res = parse_json(self.llm.complete(SCREEN_SYS, f"QUESTION: {question}\nRELEVANT IF: {inclusion}\n\n{listing}", task=task, json_mode=True))
                 got = {int(s["i"]): int(s["score"]) for s in res.get("scores", []) if str(s.get("i", "")).isdigit() or isinstance(s.get("i"), int)}
             except (ValueError, KeyError, json.JSONDecodeError, TypeError, requests.RequestException):
                 got = {}
@@ -233,6 +247,7 @@ class LitScout:
         plan = self.plan(question)
         self.log(f"plan: {[s['name'] for s in plan['subtopics']]}")
         pool = self.gather(plan, question)
+        self.log("screening the most relevant candidates")
         first = self.screen(self.prerank(pool, question, plan, keep=60), question, plan["inclusion"])
         kept = [(p, s) for p, s in first if s >= 2]
         seen = {p.key() for p in pool}
@@ -243,8 +258,13 @@ class LitScout:
         kept = sorted(kept, key=lambda t: (-t[1], -t[0].citations))
         kept = [t for t in kept if t[0].abstract][: self.max_cards]
         self.log(f"screen: kept {len(kept)} papers")
-        cards = [Card(n=i + 1, paper=p, score=s, facts=self.extract(p)) for i, (p, s) in enumerate(kept)]
+        cards = []
+        for i, (p, s) in enumerate(kept):
+            self.log(f"reading paper {i + 1} of {len(kept)}: {p.title[:80]}")
+            cards.append(Card(n=i + 1, paper=p, score=s, facts=self.extract(p)))
+        self.log("writing the review from evidence cards")
         draft = self.synthesize(question, plan, cards)
+        self.log("verifying every cited sentence against its sources")
         by_n = {c.n: c for c in cards}
         sections, removed, tally = [], [], {}
         for sec in draft.get("sections", []):

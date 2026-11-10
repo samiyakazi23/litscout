@@ -2,7 +2,8 @@
 
 An AI research agent that writes literature reviews where **every citation is a real paper and every cited sentence is checked against its source**.
 
-**Demo:** https://samiyakazi23.github.io/litscout/ · example reviews with clickable citations, the evidence behind each one, and the sentences the verifier cut.
+**Try it:** https://huggingface.co/spaces/samiyakazi23/litscout · type any research question and get a verified review in about 10 minutes.
+**Static demo:** https://samiyakazi23.github.io/litscout/ · example reviews with clickable citations, the evidence behind each one, and the sentences the verifier cut.
 
 AI tools that write literature reviews are known for inventing papers and misquoting real ones. LitScout is built so that it cannot cite anything it has not retrieved, and so that a claim its sources do not support never reaches the reader.
 
@@ -45,6 +46,7 @@ LitScout finds about 6× more of the experts' references than a single search (1
 |---|---|---|---|---|
 | ML for flood forecasting in the Brahmaputra basin | 731 | 25 | 7 of 12 (3 partly supported; 2 unsupported, cut) | 0 |
 | ML flood forecasting in large basins (arXiv only) | 90 | 15 | 14 of 14 | 0 |
+| Deep learning for landslide detection (run through the public service) | 635 | 25 | 17 of 27 (6 partly supported; 3 unsupported, cut) | 0 |
 
 Tests (`tests/`) include a model that deliberately invents a citation and a claim: both are always removed.
 
@@ -61,11 +63,22 @@ python -m litscout.evaluate      # survey-recall benchmark (data/benchmark/surve
 
 Outputs go to `reports/reviews/<question>/review.md` and `review.json`.
 
+### Public web service
+
+```bash
+pip install -r requirements-server.txt
+uvicorn litscout.server:app --port 7860     # open http://localhost:7860
+```
+
+Anyone can type a question; the page shows each step live (plan, search, screen, snowball, read, write, verify) and adds the finished review to a public gallery. The host's key is limited to `DAILY_CAP` reviews a day (default 4) and one review runs at a time. Visitors can paste their own free Groq key, which is used only for their run and never stored. The `Dockerfile` runs it on a Hugging Face Space (`scripts/deploy_hf.sh`), with `GROQ_API_KEY` and `OPENALEX_API_KEY` set as Space secrets.
+
 ### Running on free tiers
 
 Groq's free tier allows 8,000 tokens per minute and 200,000 per day *per model*, and counts the maximum answer length against the minute limit. LitScout:
 - caps output length per step;
-- routes steps to different models so they draw on separate quotas (`LITSCOUT_MODEL_<TASK>`, defaults: gpt-oss-20b for screening, Qwen for extraction, gpt-oss-120b for planning, writing and verification);
+- routes steps to different models so they draw on separate quotas (`LITSCOUT_MODEL_<TASK>`, defaults: gpt-oss-20b and Qwen alternating for screening, Qwen for extraction, gpt-oss-120b for planning, writing and verification);
+- when a model's daily quota runs out, switches to the next free model instead of waiting;
+- queries the paper sources in parallel and stops asking a source that is rate-limiting;
 - caches every model response and API call on disk, so reruns cost nothing.
 
 A full review uses roughly 60,000 tokens and takes 5–10 minutes on the free tier.
@@ -79,6 +92,7 @@ litscout/
   llm.py        Groq client with per-task routing, token caps, retries, cache; FakeLLM for tests
   evaluate.py   survey reference-list recall benchmark
   cli.py        command line
+  server.py     public web service (FastAPI): live progress, daily cap, bring-your-own-key, gallery
 docs/           demo site (GitHub Pages)
 tests/          offline tests, including invented-citation and paraphrased-quote checks
 ```

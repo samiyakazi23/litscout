@@ -88,6 +88,24 @@ tr.hl td{background:var(--mark)}
 details{font-size:14px}
 details summary{cursor:pointer;font-weight:700;color:var(--ink)}
 details li{margin:8px 0;color:var(--ink-2)}
+.ask{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--shadow);margin:6px 0 28px}
+.ask h2{font:600 24px Literata,serif;margin-bottom:12px}
+.ask form{display:grid;grid-template-columns:1fr auto;gap:10px}
+@media (max-width:700px){.ask form{grid-template-columns:1fr}}
+.ask textarea{font:400 17px/1.5 Literata,serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;resize:vertical;min-height:58px}
+.ask .run{font:800 15px Manrope;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));border:0;border-radius:12px;padding:0 22px;cursor:pointer;min-height:52px}
+.ask .run:disabled{opacity:.55;cursor:wait}
+.ask .opts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:10px;font-size:14px;color:var(--ink-2)}
+.ask .opts input{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.ask .opts input[type=password]{width:260px;max-width:100%}
+.prog{margin-top:14px;display:none}
+.prog.on{display:block}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.steps span{font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--bg);color:var(--ink-2)}
+.steps span.done{background:var(--ok-bg);color:var(--ok)} .steps span.now{background:var(--brand-50);color:var(--brand)}
+.logbox{font-size:13.5px;color:var(--ink-2);max-height:140px;overflow:auto;background:var(--bg);border-radius:10px;padding:10px 12px}
+.err{color:var(--cut);font-weight:700;margin-top:10px}
+.tryit{display:inline-block;margin-top:14px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));padding:11px 18px;border-radius:12px;text-decoration:none}
 section.block{padding:56px 0 0}
 section.block h2{font:600 34px Literata,serif;letter-spacing:-.01em}
 section.block .lead{color:var(--ink-2);max-width:70ch;margin:10px 0 20px}
@@ -99,7 +117,7 @@ footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;colo
 <body>
 <header class="nav"><div class="wrap">
   <a class="logo" href="#"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M8 10.5l2 2 3.5-3.5"/></svg></i>LitScout</a>
-  <nav><a href="#review">Example reviews</a><a href="#benchmark">Benchmark</a><a href="#method">How it works</a><a class="gh" href="https://github.com/samiyakazi23/litscout">GitHub</a></nav>
+  <nav><a href="#review">Reviews</a><a href="#benchmark">Benchmark</a><a href="#method">How it works</a><a class="gh" href="https://github.com/samiyakazi23/litscout">GitHub</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -118,6 +136,25 @@ footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;colo
         <li><span><b>Verify</b> each sentence against the cited abstracts; cut what fails</span></li>
       </ol>
     </div>
+  </div>
+
+  <div class="ask" id="ask" hidden>
+    <h2>Review any research question</h2>
+    <form id="askform">
+      <textarea id="q" required minlength="12" maxlength="300" placeholder="e.g. Deep learning for early detection of diabetic retinopathy in low-resource settings"></textarea>
+      <button class="run" id="run" type="submit">Write my review</button>
+    </form>
+    <div class="opts">
+      <label>Papers up to year <input id="until" type="number" min="1950" max="2100" placeholder="any" style="width:90px"></label>
+      <label>Your Groq key (optional) <input id="key" type="password" autocomplete="off" placeholder="gsk_… used only for this run"></label>
+      <span id="quota"></span>
+    </div>
+    <div class="prog" id="prog"><div class="steps" id="steps"></div><div class="logbox" id="log"></div><div class="err" id="err"></div></div>
+  </div>
+  <div class="ask" id="golive" hidden>
+    <h2>Run your own review</h2>
+    <p class="peek" style="font-size:15px">This page shows example reviews. The live agent runs on Hugging Face, where anyone can type a question and get a verified review in about 5–10 minutes.</p>
+    <a class="tryit" id="livelink" href="#">Open the live LitScout</a>
   </div>
 
   <div id="review">
@@ -145,13 +182,48 @@ footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;colo
 (async function(){
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const index=await fetch("reviews/index.json").then(r=>r.json()).catch(()=>[]);
+const LIVE_URL="https://huggingface.co/spaces/samiyakazi23/litscout";
+const api=await fetch("api/status").then(r=>r.ok?r.json():null).catch(()=>null);
+let index=await fetch("reviews/index.json").then(r=>r.json()).catch(()=>[]);
+index=index.map(r=>({...r,url:"reviews/"+r.file}));
+if(api){
+  const gallery=await fetch("api/reviews").then(r=>r.json()).catch(()=>[]);
+  index=gallery.map(g=>({short:g.question,url:"api/reviews/"+g.slug})).concat(index);
+  $("#ask").hidden=false;
+  $("#quota").textContent=`${api.free_left_today} of ${api.daily_cap} free reviews left today`;
+}else{ $("#golive").hidden=false; $("#livelink").href=LIVE_URL; }
 let cur=null;
-$("#picker").innerHTML=index.map((r,i)=>`<button data-i="${i}" aria-pressed="${i===0}">${esc(r.short||r.question)}</button>`).join("");
-document.querySelectorAll("#picker button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#picker button").forEach(x=>x.setAttribute("aria-pressed",x===b));load(index[+b.dataset.i].file)});
+function drawPicker(sel=0){
+  $("#picker").innerHTML=index.slice(0,12).map((r,i)=>`<button data-i="${i}" aria-pressed="${i===sel}">${esc((r.short||r.question).slice(0,70))}</button>`).join("");
+  document.querySelectorAll("#picker button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#picker button").forEach(x=>x.setAttribute("aria-pressed",x===b));load(index[+b.dataset.i].url)});
+}
+drawPicker();
+const STEPS=[["plan","Plan"],["search","Search"],["screening","Screen"],["snowball","Snowball"],["reading","Read papers"],["writing","Write"],["verifying","Verify"],["Done","Done"]];
+$("#askform")?.addEventListener("submit",async e=>{
+  e.preventDefault(); $("#err").textContent=""; $("#run").disabled=true; $("#prog").classList.add("on");
+  const body={question:$("#q").value.trim()}; const k=$("#key").value.trim(); if(k)body.groq_key=k; const u=+$("#until").value; if(u)body.until_year=u;
+  const r=await fetch("api/review",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!r.ok){$("#err").textContent=d.detail?.[0]?.msg||d.detail||"Could not start the review.";$("#run").disabled=false;return}
+  poll(d.job);
+});
+async function poll(id){
+  const j=await fetch("api/job/"+id).then(r=>r.json());
+  const msgs=j.progress.map(p=>p.msg);
+  const reached=STEPS.map(([k])=>msgs.some(m=>m.toLowerCase().startsWith(k.toLowerCase())));
+  const last=reached.lastIndexOf(true);
+  $("#steps").innerHTML=STEPS.map(([,n],i)=>`<span class="${i<last||j.status==="done"?"done":i===last?"now":""}">${n}</span>`).join("");
+  $("#log").innerHTML=j.progress.slice(-8).map(p=>`${p.t}s · ${esc(p.msg)}`).join("<br>");
+  if(j.status==="running")return setTimeout(()=>poll(id),2500);
+  $("#run").disabled=false;
+  if(j.status==="error"){$("#err").textContent=j.error;return}
+  index.unshift({short:j.question,url:"api/reviews/"+j.review.slug}); drawPicker(0); render(j.review);
+  document.getElementById("review").scrollIntoView({behavior:"smooth"});
+}
 const withCites=t=>esc(t).replace(/\[(\d+)\]/g,(m,n)=>`<button class="cite" data-n="${n}" aria-label="Citation ${n}">${n}</button>`);
-async function load(file){
-  const r=await fetch("reviews/"+file).then(x=>x.json()); cur=r;
+async function load(url){ render(await fetch(url).then(x=>x.json())); }
+function render(r){
+  cur=r;
   const s=r.stats;
   $("#doc").innerHTML=`<h2>${esc(r.question)}</h2>
     <p class="meta">${s.cards} papers reviewed from ${s.papers_found} found · ${Math.round(s.supported_share*100)}% of cited sentences fully supported, the rest partly · ${s.invalid_citations_removed} invented citations</p>
@@ -175,7 +247,7 @@ function peek(n){
     <p style="margin:8px 0 0"><span class="chip ok">real paper</span> ${c.doi?`DOI ${esc(c.doi)}`:esc(c.pid)}</p>
     ${c.facts.evidence_quote?`<q>${esc(c.facts.evidence_quote)}</q>`:""}</div>`;
 }
-if(index.length)load(index[0].file);
+if(index.length)load(index[0].url);
 const bench=await fetch("benchmark.json").then(r=>r.ok?r.json():null).catch(()=>null);
 if(bench){
   const m=bench.mean_recall, rows=[["One keyword search","baseline"],["LitScout planned queries","multi_query"],["LitScout + citation snowballing","with_snowball"]];

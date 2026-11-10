@@ -5,3 +5,4 @@ __pycache__/
 data/cache/
 data/llm_cache/
 reports/*.log
+data/public/

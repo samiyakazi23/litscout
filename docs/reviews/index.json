@@ -1,5 +1,9 @@
 [
  {
+  "file": "landslide-detection.json",
+  "short": "Deep learning for landslide detection"
+ },
+ {
   "file": "brahmaputra-floods.json",
   "short": "ML for flood forecasting in the Brahmaputra basin"
  },
