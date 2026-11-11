@@ -219,7 +219,7 @@ footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 40px;colo
 (async function(){
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const LIVE_URL="https://huggingface.co/spaces/samiyakazi23/litscout";
+const LIVE_URL="https://litscout-9x39.onrender.com";
 const api=await fetch("api/status").then(r=>r.ok?r.json():null).catch(()=>null);
 let index=await fetch("reviews/index.json").then(r=>r.json()).catch(()=>[]);
 index=index.map(r=>({...r,url:"reviews/"+r.file}));

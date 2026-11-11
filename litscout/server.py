@@ -184,7 +184,7 @@ def get_review(name: str):
     return JSONResponse(json.loads(f.read_text(encoding="utf-8")))
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])  # Render health checks use HEAD
 def home():
     return FileResponse(DOCS / "index.html")
 

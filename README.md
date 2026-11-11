@@ -2,7 +2,7 @@
 
 An AI research agent that writes literature reviews where **every citation is a real paper and every cited sentence is checked against its source**.
 
-**Try it:** https://huggingface.co/spaces/samiyakazi23/litscout · type any research question and get a verified review in about 10 minutes, or paste a GitHub repo and get a checked draft paper.
+**Try it:** https://litscout-9x39.onrender.com · type any research question and get a verified review in about 10 minutes (the free server may take a minute to wake up), or paste a GitHub repo and get a checked draft paper.
 **Static demo:** https://samiyakazi23.github.io/litscout/ · example reviews with clickable citations, the evidence behind each one, and the sentences the verifier cut.
 
 AI tools that write literature reviews are known for inventing papers and misquoting real ones. LitScout is built so that it cannot cite anything it has not retrieved, and so that a claim its sources do not support never reaches the reader.
@@ -97,7 +97,7 @@ pip install -r requirements-server.txt
 uvicorn litscout.server:app --port 7860     # open http://localhost:7860
 ```
 
-Anyone can type a question; the page shows each step live (plan, search, screen, snowball, read, write, verify) and adds the finished review to a public gallery. The host's key is limited to `DAILY_CAP` reviews a day (default 4) and one review runs at a time. Visitors can paste their own free Groq key, which is used only for their run and never stored. The `Dockerfile` runs it on a Hugging Face Space (`scripts/deploy_hf.sh`), with `GROQ_API_KEY` and `OPENALEX_API_KEY` set as Space secrets.
+Anyone can type a question; the page shows each step live (plan, search, screen, snowball, read, write, verify) and adds the finished review to a public gallery. The host's key is limited to `DAILY_CAP` reviews a day (default 4) and one review runs at a time. Visitors can paste their own free Groq key, which is used only for their run and never stored. It is deployed from the `Dockerfile` on Render's free plan (it sleeps after 15 idle minutes, so the first visit can take about a minute), with `GROQ_API_KEY` and `OPENALEX_API_KEY` set as environment variables.
 
 ### Running on free tiers
 
